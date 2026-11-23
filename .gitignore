@@ -1,0 +1,19 @@
+# saida de compilacao
+out/
+bin/
+*.class
+
+# estado persistido gerado em tempo de execucao
+*.ser
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# sistema operacional
+.DS_Store
+Thumbs.db
