@@ -2,6 +2,7 @@ package br.ufal.ic.p2.bikeshare;
 
 import br.ufal.ic.p2.bikeshare.exceptions.BikeshareException;
 import br.ufal.ic.p2.bikeshare.persistence.RepositorioSistema;
+import br.ufal.ic.p2.bikeshare.service.EstacaoService;
 import br.ufal.ic.p2.bikeshare.service.SistemaBikeshare;
 import br.ufal.ic.p2.bikeshare.service.UsuarioService;
 
@@ -19,6 +20,7 @@ public class Facade {
 
     private SistemaBikeshare sistema;
     private UsuarioService usuarios;
+    private EstacaoService estacoes;
 
     public Facade() {
         trocarSistema(RepositorioSistema.carregar());
@@ -28,6 +30,7 @@ public class Facade {
     private void trocarSistema(SistemaBikeshare novoSistema) {
         this.sistema = novoSistema;
         this.usuarios = new UsuarioService(novoSistema);
+        this.estacoes = new EstacaoService(novoSistema);
     }
 
     // =====================================================================
@@ -108,44 +111,47 @@ public class Facade {
     // US05 - Cadastro de estacao
     // =====================================================================
 
-    public String criarEstacao(String nome, String endereco, String capacidade) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String criarEstacao(String nome, String endereco, String capacidade)
+            throws BikeshareException {
+        return estacoes.criarEstacao(nome, endereco, capacidade);
     }
 
     // =====================================================================
     // US06 - Gestao de bicicletas na estacao
     // =====================================================================
 
-    public void adicionarBicicleta(String estacao, String bicicleta, String tipo) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void adicionarBicicleta(String estacao, String bicicleta, String tipo)
+            throws BikeshareException {
+        estacoes.adicionarBicicleta(estacao, bicicleta, tipo, null);
     }
 
-    public void adicionarBicicleta(String estacao, String bicicleta, String tipo, String nivelBateria) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void adicionarBicicleta(String estacao, String bicicleta, String tipo, String nivelBateria)
+            throws BikeshareException {
+        estacoes.adicionarBicicleta(estacao, bicicleta, tipo, nivelBateria);
     }
 
-    public void removerBicicleta(String estacao, String bicicleta) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void removerBicicleta(String estacao, String bicicleta) throws BikeshareException {
+        estacoes.removerBicicleta(estacao, bicicleta);
     }
 
-    public String getAtributoBicicleta(String bicicleta, String atributo) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getAtributoBicicleta(String bicicleta, String atributo) throws BikeshareException {
+        return estacoes.getAtributoBicicleta(bicicleta, atributo);
     }
 
     // =====================================================================
     // US07 - Consulta de disponibilidade
     // =====================================================================
 
-    public String getBicicletasDisponiveis(String estacao) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getBicicletasDisponiveis(String estacao) throws BikeshareException {
+        return estacoes.getBicicletasDisponiveis(estacao);
     }
 
-    public String getVagasDisponiveis(String estacao) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getVagasDisponiveis(String estacao) throws BikeshareException {
+        return estacoes.getVagasDisponiveis(estacao);
     }
 
-    public String getEstadoBicicleta(String bicicleta) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getEstadoBicicleta(String bicicleta) throws BikeshareException {
+        return estacoes.getEstadoBicicleta(bicicleta);
     }
 
     // =====================================================================

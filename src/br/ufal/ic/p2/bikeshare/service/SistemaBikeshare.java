@@ -1,5 +1,7 @@
 package br.ufal.ic.p2.bikeshare.service;
 
+import br.ufal.ic.p2.bikeshare.model.bicicleta.Bicicleta;
+import br.ufal.ic.p2.bikeshare.model.estacao.Estacao;
 import br.ufal.ic.p2.bikeshare.model.plano.Plano;
 import br.ufal.ic.p2.bikeshare.model.usuario.Usuario;
 import br.ufal.ic.p2.bikeshare.util.TextoUtil;
@@ -21,9 +23,12 @@ public class SistemaBikeshare implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Map<String, Usuario> usuarios = new LinkedHashMap<>();
+    private final Map<String, Estacao> estacoes = new LinkedHashMap<>();
+    private final Map<String, Bicicleta> bicicletas = new LinkedHashMap<>();
     private final Map<String, Plano> planos = new LinkedHashMap<>();
 
     private int proximoIdUsuario = 1;
+    private int proximoIdEstacao = 1;
 
     public SistemaBikeshare() {
         registrarPlano(Plano.avulso());
@@ -69,6 +74,47 @@ public class SistemaBikeshare implements Serializable {
      */
     public String gerarIdUsuario() {
         return "U" + proximoIdUsuario++;
+    }
+
+    // ---- estacoes ------------------------------------------------------
+
+    public Map<String, Estacao> getEstacoes() {
+        return estacoes;
+    }
+
+    public Estacao buscarEstacao(String id) {
+        return estacoes.get(TextoUtil.limpar(id));
+    }
+
+    public void adicionarEstacao(Estacao estacao) {
+        estacoes.put(estacao.getId(), estacao);
+    }
+
+    public void removerEstacao(String id) {
+        estacoes.remove(id);
+    }
+
+    /** Gera o proximo identificador de estacao, em numeracao propria e sequencial. */
+    public String gerarIdEstacao() {
+        return "E" + proximoIdEstacao++;
+    }
+
+    // ---- bicicletas ----------------------------------------------------
+
+    public Map<String, Bicicleta> getBicicletas() {
+        return bicicletas;
+    }
+
+    public Bicicleta buscarBicicleta(String id) {
+        return bicicletas.get(TextoUtil.limpar(id));
+    }
+
+    public void adicionarBicicleta(Bicicleta bicicleta) {
+        bicicletas.put(bicicleta.getId(), bicicleta);
+    }
+
+    public void removerBicicleta(String id) {
+        bicicletas.remove(id);
     }
 
     // ---- planos --------------------------------------------------------
