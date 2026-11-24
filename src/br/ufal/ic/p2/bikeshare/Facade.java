@@ -1,40 +1,49 @@
 package br.ufal.ic.p2.bikeshare;
 
 import br.ufal.ic.p2.bikeshare.exceptions.BikeshareException;
+import br.ufal.ic.p2.bikeshare.exceptions.Mensagens;
+import br.ufal.ic.p2.bikeshare.exceptions.ValidacaoException;
 import br.ufal.ic.p2.bikeshare.persistence.RepositorioSistema;
 import br.ufal.ic.p2.bikeshare.service.AluguelService;
 import br.ufal.ic.p2.bikeshare.service.EstacaoService;
 import br.ufal.ic.p2.bikeshare.service.ManutencaoService;
 import br.ufal.ic.p2.bikeshare.service.PenalidadeService;
 import br.ufal.ic.p2.bikeshare.service.PlanoService;
+import br.ufal.ic.p2.bikeshare.service.RelatorioService;
 import br.ufal.ic.p2.bikeshare.service.SistemaBikeshare;
 import br.ufal.ic.p2.bikeshare.service.UsuarioService;
+import br.ufal.ic.p2.bikeshare.undo.Comando;
+import br.ufal.ic.p2.bikeshare.undo.HistoricoComandos;
+import br.ufal.ic.p2.bikeshare.undo.Memento;
 
 /**
  * Ponto unico de entrada do sistema BIKESHARE (requisito nao funcional BS01).
  *
  * <p>Nao ha interface grafica: os testes de aceitacao conversam com o sistema
  * exclusivamente por esta classe. A Facade nao contem regra de negocio &mdash; cada
- * chamada apenas delega ao servico responsavel &mdash; e e tambem quem cuida do ciclo
- * de vida do estado (carga na criacao, gravacao no encerramento).</p>
+ * chamada apenas delega ao servico responsavel. Cabe a ela, porem, tres
+ * responsabilidades de infraestrutura: carregar e gravar o estado, apontar os
+ * servicos para o estado vigente e registrar no historico de desfazer todo comando
+ * que termina com sucesso.</p>
  */
 public class Facade {
 
-    private static final String NAO_IMPLEMENTADO = "Ainda nao implementado.";
-
     private SistemaBikeshare sistema;
+    private final HistoricoComandos historico = new HistoricoComandos();
+
     private UsuarioService usuarios;
     private EstacaoService estacoes;
     private AluguelService alugueis;
     private PlanoService planos;
     private PenalidadeService penalidades;
     private ManutencaoService manutencoes;
+    private RelatorioService relatorios;
 
     public Facade() {
         trocarSistema(RepositorioSistema.carregar());
     }
 
-    /** Aponta a Facade e os servicos para um novo estado. */
+    /** Aponta a Facade e todos os servicos para um novo estado. */
     private void trocarSistema(SistemaBikeshare novoSistema) {
         this.sistema = novoSistema;
         this.usuarios = new UsuarioService(novoSistema);
@@ -43,6 +52,33 @@ public class Facade {
         this.planos = new PlanoService(novoSistema);
         this.penalidades = new PenalidadeService(this.usuarios);
         this.manutencoes = new ManutencaoService(this.estacoes);
+        this.relatorios = new RelatorioService(novoSistema);
+    }
+
+    /**
+     * Executa um comando que altera o estado, guardando antes um retrato do sistema.
+     *
+     * <p>O retrato so entra no historico se o comando terminar sem erro: operacoes
+     * recusadas nao mudaram nada e, por isso, tambem nao podem ser desfeitas.</p>
+     */
+    private <T> T executar(Comando<T> comando) throws BikeshareException {
+        Memento estadoAnterior = Memento.capturar(sistema);
+        T resultado = comando.executar();
+        historico.registrar(estadoAnterior);
+        return resultado;
+    }
+
+    /** Versao de {@link #executar(Comando)} para comandos sem retorno. */
+    private void executar(ComandoSemRetorno comando) throws BikeshareException {
+        executar(() -> {
+            comando.executar();
+            return null;
+        });
+    }
+
+    @FunctionalInterface
+    private interface ComandoSemRetorno {
+        void executar() throws BikeshareException;
     }
 
     // =====================================================================
@@ -51,23 +87,26 @@ public class Facade {
 
     public String criarUsuario(String nome, String email, String senha, String tipo, String cpf)
             throws BikeshareException {
-        return usuarios.criarPessoaFisica(nome, email, senha, tipo, cpf, null, null);
+        return executar(() -> usuarios.criarPessoaFisica(nome, email, senha, tipo, cpf, null, null));
     }
 
     public String criarUsuario(String nome, String email, String senha, String tipo,
                                String cnpj, String razaoSocial) throws BikeshareException {
-        return usuarios.criarPessoaJuridica(nome, email, senha, tipo, cnpj, razaoSocial, null, null);
+        return executar(() ->
+                usuarios.criarPessoaJuridica(nome, email, senha, tipo, cnpj, razaoSocial, null, null));
     }
 
     public String criarUsuario(String nome, String email, String senha, String tipo, String cpf,
                                String plano, String mensalidade) throws BikeshareException {
-        return usuarios.criarPessoaFisica(nome, email, senha, tipo, cpf, plano, mensalidade);
+        return executar(() ->
+                usuarios.criarPessoaFisica(nome, email, senha, tipo, cpf, plano, mensalidade));
     }
 
     public String criarUsuario(String nome, String email, String senha, String tipo, String cnpj,
                                String razaoSocial, String plano, String mensalidade)
             throws BikeshareException {
-        return usuarios.criarPessoaJuridica(nome, email, senha, tipo, cnpj, razaoSocial, plano, mensalidade);
+        return executar(() ->
+                usuarios.criarPessoaJuridica(nome, email, senha, tipo, cnpj, razaoSocial, plano, mensalidade));
     }
 
     // =====================================================================
@@ -87,17 +126,18 @@ public class Facade {
     // =====================================================================
 
     public void alterarUsuario(String usuario, String atributo, String valor) throws BikeshareException {
-        usuarios.alterar(usuario, atributo, valor);
+        executar(() -> usuarios.alterar(usuario, atributo, valor));
     }
 
     public void alterarUsuario(String usuario, String atributo, String valor1, String chave)
             throws BikeshareException {
-        usuarios.alterarMetodoPix(usuario, exigirMetodoPagamento(atributo, valor1), chave);
+        executar(() -> usuarios.alterarMetodoPix(usuario, exigirMetodoPagamento(atributo, valor1), chave));
     }
 
     public void alterarUsuario(String usuario, String atributo, String valor1, String numero, String validade)
             throws BikeshareException {
-        usuarios.alterarMetodoCartao(usuario, exigirMetodoPagamento(atributo, valor1), numero, validade);
+        executar(() ->
+                usuarios.alterarMetodoCartao(usuario, exigirMetodoPagamento(atributo, valor1), numero, validade));
     }
 
     /**
@@ -106,7 +146,7 @@ public class Facade {
      */
     private String exigirMetodoPagamento(String atributo, String valor1) throws BikeshareException {
         if (!"metodoPagamento".equals(atributo)) {
-            throw new BikeshareException("Atributo nao pode ser alterado.");
+            throw new ValidacaoException(Mensagens.ATRIBUTO_NAO_ALTERAVEL);
         }
         return valor1;
     }
@@ -116,34 +156,32 @@ public class Facade {
     // =====================================================================
 
     public void removerUsuario(String usuario) throws BikeshareException {
-        usuarios.remover(usuario);
+        executar(() -> usuarios.remover(usuario));
     }
 
     // =====================================================================
     // US05 - Cadastro de estacao
     // =====================================================================
 
-    public String criarEstacao(String nome, String endereco, String capacidade)
-            throws BikeshareException {
-        return estacoes.criarEstacao(nome, endereco, capacidade);
+    public String criarEstacao(String nome, String endereco, String capacidade) throws BikeshareException {
+        return executar(() -> estacoes.criarEstacao(nome, endereco, capacidade));
     }
 
     // =====================================================================
     // US06 - Gestao de bicicletas na estacao
     // =====================================================================
 
-    public void adicionarBicicleta(String estacao, String bicicleta, String tipo)
-            throws BikeshareException {
-        estacoes.adicionarBicicleta(estacao, bicicleta, tipo, null);
+    public void adicionarBicicleta(String estacao, String bicicleta, String tipo) throws BikeshareException {
+        executar(() -> estacoes.adicionarBicicleta(estacao, bicicleta, tipo, null));
     }
 
     public void adicionarBicicleta(String estacao, String bicicleta, String tipo, String nivelBateria)
             throws BikeshareException {
-        estacoes.adicionarBicicleta(estacao, bicicleta, tipo, nivelBateria);
+        executar(() -> estacoes.adicionarBicicleta(estacao, bicicleta, tipo, nivelBateria));
     }
 
     public void removerBicicleta(String estacao, String bicicleta) throws BikeshareException {
-        estacoes.removerBicicleta(estacao, bicicleta);
+        executar(() -> estacoes.removerBicicleta(estacao, bicicleta));
     }
 
     public String getAtributoBicicleta(String bicicleta, String atributo) throws BikeshareException {
@@ -172,16 +210,15 @@ public class Facade {
 
     public String retirarBicicleta(String usuario, String estacao, String bicicleta, String data)
             throws BikeshareException {
-        return alugueis.retirar(usuario, estacao, bicicleta, data);
+        return executar(() -> alugueis.retirar(usuario, estacao, bicicleta, data));
     }
 
     // =====================================================================
     // US09 - Devolucao de bicicleta
     // =====================================================================
 
-    public void devolverBicicleta(String aluguel, String estacao, String data)
-            throws BikeshareException {
-        alugueis.devolver(aluguel, estacao, data);
+    public void devolverBicicleta(String aluguel, String estacao, String data) throws BikeshareException {
+        executar(() -> alugueis.devolver(aluguel, estacao, data));
     }
 
     // =====================================================================
@@ -206,7 +243,7 @@ public class Facade {
 
     public String criarPlano(String nome, String franquiaMinutos, String valorMinutoExcedente,
                              String mensalidade) throws BikeshareException {
-        return planos.criarPlano(nome, franquiaMinutos, valorMinutoExcedente, mensalidade);
+        return executar(() -> planos.criarPlano(nome, franquiaMinutos, valorMinutoExcedente, mensalidade));
     }
 
     // =====================================================================
@@ -215,7 +252,7 @@ public class Facade {
 
     public void lancaPenalidade(String usuario, String tipo, String valor, String motivo)
             throws BikeshareException {
-        penalidades.lancarPenalidade(usuario, tipo, valor, motivo);
+        executar(() -> penalidades.lancarPenalidade(usuario, tipo, valor, motivo));
     }
 
     // =====================================================================
@@ -223,39 +260,47 @@ public class Facade {
     // =====================================================================
 
     public void lancaDefeito(String bicicleta, String descricao) throws BikeshareException {
-        manutencoes.lancarDefeito(bicicleta, descricao);
+        executar(() -> manutencoes.lancarDefeito(bicicleta, descricao));
     }
 
     public void concluiManutencao(String bicicleta) throws BikeshareException {
-        manutencoes.concluirManutencao(bicicleta);
+        executar(() -> manutencoes.concluirManutencao(bicicleta));
     }
 
     // =====================================================================
     // US15 - Relatorios
     // =====================================================================
 
-    public String getTotalFaturado(String dataInicial, String dataFinal) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getTotalFaturado(String dataInicial, String dataFinal) throws BikeshareException {
+        return relatorios.getTotalFaturado(dataInicial, dataFinal);
     }
 
     // =====================================================================
     // US16 - Undo / redo
     // =====================================================================
 
-    public void undo() {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    /** Desfaz o ultimo comando bem-sucedido, inclusive o de zerar o sistema. */
+    public void undo() throws BikeshareException {
+        trocarSistema(historico.desfazer(sistema));
     }
 
-    public void redo() {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    /** Reaplica o comando desfeito mais recentemente. */
+    public void redo() throws BikeshareException {
+        trocarSistema(historico.refazer(sistema));
     }
 
     // =====================================================================
     // Ciclo de vida do sistema
     // =====================================================================
 
-    /** Descarta todo o estado, em memoria e em disco. */
+    /**
+     * Descarta todo o estado, em memoria e em disco.
+     *
+     * <p>Zerar o sistema e um comando como os demais: o estado anterior vai para o
+     * historico e pode ser recuperado com um desfazer.</p>
+     */
     public void zerarSistema() {
+        historico.registrar(Memento.capturar(sistema));
         trocarSistema(new SistemaBikeshare());
         RepositorioSistema.apagar();
     }

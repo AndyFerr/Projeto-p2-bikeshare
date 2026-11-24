@@ -59,6 +59,22 @@ lib/easyaccept.jar                 biblioteca de testes
   forma à mesma situação (requisito BS05).
 - **Valores monetários em `BigDecimal`.** Tarifas e penalidades nunca passam por
   `double`, evitando erro de arredondamento acumulado.
+- **Undo/redo por Memento.** O histórico guarda retratos do estado inteiro, e não uma
+  operação inversa por comando. É isso que permite desfazer até mesmo `zerarSistema` e
+  manter coerentes os contadores de identificadores depois de um desfazer. Comandos
+  recusados não entram no histórico, porque nada chegou a mudar.
+
+## Estado dos testes
+
+Todos os 30 scripts de aceitação passam — 1385 asserções:
+
+```
+us1 71 | us1_1 14 | us2 46 | us3 129 | us3_1 17 | us4 37 | us4_1 15
+us5 42 | us5_1 11 | us6 74 | us6_1 14 | us7 39
+us8 106 | us8_1 17 | us9 180 | us9_1 22 | us10 60 | us10_1 7
+us11 46 | us11_1 7 | us12 71 | us12_1 13 | us13 71 | us13_1 11
+us14 71 | us14_1 9 | us15 56 | us15_1 7 | us16 112 | us16_1 10
+```
 
 ## User Stories
 
