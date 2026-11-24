@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.bikeshare.service;
 
+import br.ufal.ic.p2.bikeshare.model.aluguel.Aluguel;
 import br.ufal.ic.p2.bikeshare.model.bicicleta.Bicicleta;
 import br.ufal.ic.p2.bikeshare.model.estacao.Estacao;
 import br.ufal.ic.p2.bikeshare.model.plano.Plano;
@@ -25,10 +26,12 @@ public class SistemaBikeshare implements Serializable {
     private final Map<String, Usuario> usuarios = new LinkedHashMap<>();
     private final Map<String, Estacao> estacoes = new LinkedHashMap<>();
     private final Map<String, Bicicleta> bicicletas = new LinkedHashMap<>();
+    private final Map<String, Aluguel> alugueis = new LinkedHashMap<>();
     private final Map<String, Plano> planos = new LinkedHashMap<>();
 
     private int proximoIdUsuario = 1;
     private int proximoIdEstacao = 1;
+    private int proximoIdAluguel = 1;
 
     public SistemaBikeshare() {
         registrarPlano(Plano.avulso());
@@ -115,6 +118,28 @@ public class SistemaBikeshare implements Serializable {
 
     public void removerBicicleta(String id) {
         bicicletas.remove(id);
+    }
+
+    // ---- alugueis ------------------------------------------------------
+
+    public Map<String, Aluguel> getAlugueis() {
+        return alugueis;
+    }
+
+    public Aluguel buscarAluguel(String id) {
+        return alugueis.get(TextoUtil.limpar(id));
+    }
+
+    public void adicionarAluguel(Aluguel aluguel) {
+        alugueis.put(aluguel.getId(), aluguel);
+    }
+
+    /**
+     * Gera o proximo identificador de aluguel. Como nos demais contadores, retiradas
+     * recusadas nao consomem numeracao e o contador sobrevive ao encerramento.
+     */
+    public String gerarIdAluguel() {
+        return "A" + proximoIdAluguel++;
     }
 
     // ---- planos --------------------------------------------------------

@@ -2,6 +2,7 @@ package br.ufal.ic.p2.bikeshare;
 
 import br.ufal.ic.p2.bikeshare.exceptions.BikeshareException;
 import br.ufal.ic.p2.bikeshare.persistence.RepositorioSistema;
+import br.ufal.ic.p2.bikeshare.service.AluguelService;
 import br.ufal.ic.p2.bikeshare.service.EstacaoService;
 import br.ufal.ic.p2.bikeshare.service.SistemaBikeshare;
 import br.ufal.ic.p2.bikeshare.service.UsuarioService;
@@ -21,6 +22,7 @@ public class Facade {
     private SistemaBikeshare sistema;
     private UsuarioService usuarios;
     private EstacaoService estacoes;
+    private AluguelService alugueis;
 
     public Facade() {
         trocarSistema(RepositorioSistema.carregar());
@@ -31,6 +33,7 @@ public class Facade {
         this.sistema = novoSistema;
         this.usuarios = new UsuarioService(novoSistema);
         this.estacoes = new EstacaoService(novoSistema);
+        this.alugueis = new AluguelService(novoSistema, this.usuarios, this.estacoes);
     }
 
     // =====================================================================
@@ -158,32 +161,34 @@ public class Facade {
     // US08 - Retirada de bicicleta
     // =====================================================================
 
-    public String retirarBicicleta(String usuario, String estacao, String bicicleta, String data) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String retirarBicicleta(String usuario, String estacao, String bicicleta, String data)
+            throws BikeshareException {
+        return alugueis.retirar(usuario, estacao, bicicleta, data);
     }
 
     // =====================================================================
     // US09 - Devolucao de bicicleta
     // =====================================================================
 
-    public void devolverBicicleta(String aluguel, String estacao, String data) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void devolverBicicleta(String aluguel, String estacao, String data)
+            throws BikeshareException {
+        alugueis.devolver(aluguel, estacao, data);
     }
 
     // =====================================================================
     // US10 - Consulta de historico de alugueis
     // =====================================================================
 
-    public String getHistoricoAlugueis(String usuario) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getHistoricoAlugueis(String usuario) throws BikeshareException {
+        return alugueis.getHistorico(usuario, null);
     }
 
-    public String getHistoricoAlugueis(String usuario, String atributo) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getHistoricoAlugueis(String usuario, String atributo) throws BikeshareException {
+        return alugueis.getHistorico(usuario, atributo);
     }
 
-    public String getAtributoAluguel(String aluguel, String atributo) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public String getAtributoAluguel(String aluguel, String atributo) throws BikeshareException {
+        return alugueis.getAtributoAluguel(aluguel, atributo);
     }
 
     // =====================================================================
