@@ -129,7 +129,7 @@ public class AluguelService {
         destino.acolher(bicicleta.getId());
 
         if (desfecho == EstadoAluguel.EXPIRADO) {
-            bicicleta.recolherParaManutencaoEm(destino.getId());
+            bicicleta.recolherParaManutencaoEm(destino.getId(), MOTIVO_ATRASO);
             if (usuario != null) {
                 usuario.lancarPenalidade(new PenalidadeAtraso(MOTIVO_ATRASO));
             }

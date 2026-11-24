@@ -4,6 +4,9 @@ import br.ufal.ic.p2.bikeshare.exceptions.BikeshareException;
 import br.ufal.ic.p2.bikeshare.persistence.RepositorioSistema;
 import br.ufal.ic.p2.bikeshare.service.AluguelService;
 import br.ufal.ic.p2.bikeshare.service.EstacaoService;
+import br.ufal.ic.p2.bikeshare.service.ManutencaoService;
+import br.ufal.ic.p2.bikeshare.service.PenalidadeService;
+import br.ufal.ic.p2.bikeshare.service.PlanoService;
 import br.ufal.ic.p2.bikeshare.service.SistemaBikeshare;
 import br.ufal.ic.p2.bikeshare.service.UsuarioService;
 
@@ -23,6 +26,9 @@ public class Facade {
     private UsuarioService usuarios;
     private EstacaoService estacoes;
     private AluguelService alugueis;
+    private PlanoService planos;
+    private PenalidadeService penalidades;
+    private ManutencaoService manutencoes;
 
     public Facade() {
         trocarSistema(RepositorioSistema.carregar());
@@ -34,6 +40,9 @@ public class Facade {
         this.usuarios = new UsuarioService(novoSistema);
         this.estacoes = new EstacaoService(novoSistema);
         this.alugueis = new AluguelService(novoSistema, this.usuarios, this.estacoes);
+        this.planos = new PlanoService(novoSistema);
+        this.penalidades = new PenalidadeService(this.usuarios);
+        this.manutencoes = new ManutencaoService(this.estacoes);
     }
 
     // =====================================================================
@@ -196,28 +205,29 @@ public class Facade {
     // =====================================================================
 
     public String criarPlano(String nome, String franquiaMinutos, String valorMinutoExcedente,
-                             String mensalidade) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+                             String mensalidade) throws BikeshareException {
+        return planos.criarPlano(nome, franquiaMinutos, valorMinutoExcedente, mensalidade);
     }
 
     // =====================================================================
     // US13 - Regras de bloqueio / penalidades
     // =====================================================================
 
-    public void lancaPenalidade(String usuario, String tipo, String valor, String motivo) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void lancaPenalidade(String usuario, String tipo, String valor, String motivo)
+            throws BikeshareException {
+        penalidades.lancarPenalidade(usuario, tipo, valor, motivo);
     }
 
     // =====================================================================
     // US14 - Manutencao
     // =====================================================================
 
-    public void lancaDefeito(String bicicleta, String descricao) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void lancaDefeito(String bicicleta, String descricao) throws BikeshareException {
+        manutencoes.lancarDefeito(bicicleta, descricao);
     }
 
-    public void concluiManutencao(String bicicleta) {
-        throw new UnsupportedOperationException(NAO_IMPLEMENTADO);
+    public void concluiManutencao(String bicicleta) throws BikeshareException {
+        manutencoes.concluirManutencao(bicicleta);
     }
 
     // =====================================================================

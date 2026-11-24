@@ -4,10 +4,14 @@ import br.ufal.ic.p2.bikeshare.exceptions.BikeshareException;
 import br.ufal.ic.p2.bikeshare.exceptions.Mensagens;
 import br.ufal.ic.p2.bikeshare.exceptions.RegraDeNegocioException;
 import br.ufal.ic.p2.bikeshare.exceptions.ValidacaoException;
+import br.ufal.ic.p2.bikeshare.model.manutencao.Manutencao;
 import br.ufal.ic.p2.bikeshare.util.NumeroUtil;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Veiculo compartilhado, identificado pelo codigo informado no cadastro.
@@ -26,6 +30,9 @@ public abstract class Bicicleta implements Serializable {
 
     /** Estacao onde a bicicleta se encontra; {@code null} enquanto esta em uso. */
     private String estacaoAtual;
+
+    /** Ordens de manutencao ja abertas para esta bicicleta, na ordem de abertura. */
+    private final List<Manutencao> manutencoes = new ArrayList<>();
 
     protected Bicicleta(String id, String estacaoAtual) {
         this.id = id;
@@ -99,17 +106,30 @@ public abstract class Bicicleta implements Serializable {
     }
 
     /** Devolucao com problema: a bicicleta chega a estacao, mas vai para manutencao. */
-    public void recolherParaManutencaoEm(String idEstacao) {
-        this.estado = EstadoBicicleta.EM_MANUTENCAO;
+    public void recolherParaManutencaoEm(String idEstacao, String motivo) {
         this.estacaoAtual = idEstacao;
+        registrarDefeito(motivo);
     }
 
-    public void entrarEmManutencao() {
+    /** Abre uma ordem de manutencao e tira a bicicleta de circulacao. */
+    public void registrarDefeito(String descricao) {
+        manutencoes.add(new Manutencao(descricao));
         this.estado = EstadoBicicleta.EM_MANUTENCAO;
     }
 
+    /** Fecha a ordem de manutencao em aberto e devolve a bicicleta a circulacao. */
     public void concluirManutencao() {
+        for (int i = manutencoes.size() - 1; i >= 0; i--) {
+            if (!manutencoes.get(i).estaConcluida()) {
+                manutencoes.get(i).concluir();
+                break;
+            }
+        }
         this.estado = EstadoBicicleta.DISPONIVEL;
+    }
+
+    public List<Manutencao> getManutencoes() {
+        return Collections.unmodifiableList(manutencoes);
     }
 
     // ---- consulta de atributos -----------------------------------------
