@@ -26,8 +26,8 @@ public class Main {
             "tests/us12.txt", "tests/us12_1.txt",
             "tests/us13.txt", "tests/us13_1.txt",
             "tests/us14.txt", "tests/us14_1.txt",
-//            "tests/us15.txt", "tests/us15_1.txt",
-//            "tests/us16.txt", "tests/us16_1.txt",
+            "tests/us15.txt", "tests/us15_1.txt",
+            "tests/us16.txt", "tests/us16_1.txt",
     };
 
     public static void main(String[] args) {
