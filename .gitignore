@@ -5,6 +5,8 @@ bin/
 
 # estado persistido gerado em tempo de execucao
 *.ser
+*.ser.tmp
+*.ser.ilegivel-*
 
 # IDEs
 .idea/

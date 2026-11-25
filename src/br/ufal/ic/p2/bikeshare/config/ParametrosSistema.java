@@ -16,6 +16,14 @@ import java.util.Properties;
  * lidos de {@code config/bikeshare.properties} na inicializacao; se o arquivo nao
  * existir ou uma chave estiver ausente, vale o padrao declarado aqui.</p>
  *
+ * <p>Chave ausente e chave mal preenchida sao situacoes distintas. A primeira e
+ * normal: o padrao assume o lugar. A segunda e um erro de configuracao &mdash; uma
+ * tarifa escrita como {@code abc}, uma franquia negativa, um nivel de bateria acima de
+ * 100 &mdash; e e recusada na inicializacao, em vez de silenciosamente trocada pelo
+ * padrao. Aceitar o valor padrao no lugar de um valor invalido faria o sistema rodar
+ * com uma regra diferente da que esta escrita no arquivo, e cobrar pela regra errada e
+ * pior do que nao subir.</p>
+ *
  * <p>A classe e um ponto unico de configuracao e nao guarda estado de execucao, por
  * isso nao participa da serializacao do sistema.</p>
  */
@@ -23,7 +31,14 @@ public final class ParametrosSistema {
 
     private static final String ARQUIVO_CONFIG = "config/bikeshare.properties";
 
+    private static final int BATERIA_MINIMA = 0;
+    private static final int BATERIA_MAXIMA = 100;
+
     private static final Properties PROPRIEDADES = carregar();
+
+    static {
+        validarConfiguracao();
+    }
 
     private ParametrosSistema() {
     }
@@ -94,12 +109,14 @@ public final class ParametrosSistema {
     private static Properties carregar() {
         Properties propriedades = new Properties();
         Path arquivo = Path.of(ARQUIVO_CONFIG);
-        if (Files.isReadable(arquivo)) {
-            try (InputStream entrada = Files.newInputStream(arquivo)) {
-                propriedades.load(entrada);
-            } catch (IOException ignorada) {
-                // Configuracao ilegivel: o sistema segue com os valores padrao.
-            }
+        if (!Files.exists(arquivo)) {
+            return propriedades;
+        }
+        try (InputStream entrada = Files.newInputStream(arquivo)) {
+            propriedades.load(entrada);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Nao foi possivel ler o arquivo de configuracao: " + arquivo.toAbsolutePath(), e);
         }
         return propriedades;
     }
@@ -110,18 +127,72 @@ public final class ParametrosSistema {
     }
 
     private static int inteiro(String chave, int padrao) {
+        String valor = texto(chave, String.valueOf(padrao));
         try {
-            return Integer.parseInt(texto(chave, String.valueOf(padrao)));
+            return Integer.parseInt(valor);
         } catch (NumberFormatException e) {
-            return padrao;
+            throw new IllegalStateException(
+                    "Configuracao invalida: " + chave + " deve ser um numero inteiro, mas vale \""
+                            + valor + "\".", e);
         }
     }
 
     private static BigDecimal decimal(String chave, String padrao) {
+        String valor = texto(chave, padrao);
         try {
-            return new BigDecimal(texto(chave, padrao).replace(",", "."));
+            return new BigDecimal(valor.replace(",", "."));
         } catch (NumberFormatException e) {
-            return new BigDecimal(padrao);
+            throw new IllegalStateException(
+                    "Configuracao invalida: " + chave + " deve ser um numero, mas vale \""
+                            + valor + "\".", e);
+        }
+    }
+
+    // ---- validacao -----------------------------------------------------
+
+    /**
+     * Confere, na inicializacao, que os valores configurados fazem sentido como regra
+     * de negocio. Uma chave ausente ja foi substituida pelo padrao neste ponto, de modo
+     * que so chega aqui o que esta de fato escrito no arquivo.
+     */
+    private static void validarConfiguracao() {
+        exigirNaoNegativo("plano.avulso.franquiaMinutos", BigDecimal.valueOf(franquiaAvulso()));
+        exigirNaoNegativo("plano.avulso.valorMinuto", valorMinutoAvulso());
+        exigirNaoNegativo("plano.assinante.franquiaMinutos", BigDecimal.valueOf(franquiaAssinante()));
+        exigirNaoNegativo("plano.assinante.valorMinutoExcedente", valorMinutoExcedenteAssinante());
+        exigirNaoNegativo("plano.assinante.mensalidade", mensalidadeAssinante());
+        exigirNaoNegativo("bicicleta.eletrica.adicionalPorMinuto", adicionalMinutoEletrica());
+        exigirNaoNegativo("aluguel.carenciaMinutos", BigDecimal.valueOf(carenciaMinutos()));
+        exigirNaoNegativo("penalidade.atraso.valor", valorPenalidadeAtraso());
+
+        int bateria = nivelMinimoBateria();
+        if (bateria < BATERIA_MINIMA || bateria > BATERIA_MAXIMA) {
+            throw new IllegalStateException("Configuracao invalida: "
+                    + "bicicleta.eletrica.nivelMinimoBateria deve estar entre "
+                    + BATERIA_MINIMA + " e " + BATERIA_MAXIMA + ", mas vale " + bateria + ".");
+        }
+
+        if (tempoMaximoMinutos() <= 0) {
+            throw new IllegalStateException("Configuracao invalida: "
+                    + "aluguel.tempoMaximoMinutos deve ser maior que zero, mas vale "
+                    + tempoMaximoMinutos() + ".");
+        }
+
+        // So os planos pre-registrados existem quando o primeiro usuario e cadastrado,
+        // entao apontar o plano padrao para qualquer outro nome deixaria o cadastro sem
+        // plano algum.
+        String plano = planoPadrao();
+        if (!"avulso".equals(plano) && !"assinante".equals(plano)) {
+            throw new IllegalStateException("Configuracao invalida: plano.padrao deve ser "
+                    + "\"avulso\" ou \"assinante\", mas vale \"" + plano + "\".");
+        }
+    }
+
+    private static void exigirNaoNegativo(String chave, BigDecimal valor) {
+        if (valor.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalStateException(
+                    "Configuracao invalida: " + chave + " nao pode ser negativo, mas vale "
+                            + valor.toPlainString() + ".");
         }
     }
 }

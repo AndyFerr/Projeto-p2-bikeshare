@@ -8,6 +8,7 @@ import br.ufal.ic.p2.bikeshare.model.usuario.Usuario;
 import br.ufal.ic.p2.bikeshare.util.TextoUtil;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,8 +41,9 @@ public class SistemaBikeshare implements Serializable {
 
     // ---- usuarios ------------------------------------------------------
 
+    /** Vista somente-leitura; alteracoes passam pelos metodos desta classe. */
     public Map<String, Usuario> getUsuarios() {
-        return usuarios;
+        return Collections.unmodifiableMap(usuarios);
     }
 
     public Usuario buscarUsuario(String id) {
@@ -81,8 +83,9 @@ public class SistemaBikeshare implements Serializable {
 
     // ---- estacoes ------------------------------------------------------
 
+    /** Vista somente-leitura; alteracoes passam pelos metodos desta classe. */
     public Map<String, Estacao> getEstacoes() {
-        return estacoes;
+        return Collections.unmodifiableMap(estacoes);
     }
 
     public Estacao buscarEstacao(String id) {
@@ -104,8 +107,9 @@ public class SistemaBikeshare implements Serializable {
 
     // ---- bicicletas ----------------------------------------------------
 
+    /** Vista somente-leitura; alteracoes passam pelos metodos desta classe. */
     public Map<String, Bicicleta> getBicicletas() {
-        return bicicletas;
+        return Collections.unmodifiableMap(bicicletas);
     }
 
     public Bicicleta buscarBicicleta(String id) {
@@ -122,8 +126,9 @@ public class SistemaBikeshare implements Serializable {
 
     // ---- alugueis ------------------------------------------------------
 
+    /** Vista somente-leitura; alteracoes passam pelos metodos desta classe. */
     public Map<String, Aluguel> getAlugueis() {
-        return alugueis;
+        return Collections.unmodifiableMap(alugueis);
     }
 
     public Aluguel buscarAluguel(String id) {
@@ -144,8 +149,9 @@ public class SistemaBikeshare implements Serializable {
 
     // ---- planos --------------------------------------------------------
 
+    /** Vista somente-leitura; alteracoes passam pelos metodos desta classe. */
     public Map<String, Plano> getPlanos() {
-        return planos;
+        return Collections.unmodifiableMap(planos);
     }
 
     public Plano buscarPlano(String nome) {
